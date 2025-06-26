@@ -33,9 +33,12 @@ To test `qtunnel`
 		-crypto="rc4": encryption method
 		-listen=":9001": host:port qtunnel listen on
 		-logto="stdout": stdout or syslog
+		-quic=false: use QUIC protocol instead of TCP
 		-secret="secret": password used to encrypt the data
  		
 `qtunnel` supports two encryption methods: `rc4` and `aes256cfb`. Both servers and clients should use the same `crypto` and same `secret`.
+
+`qtunnel` now supports QUIC protocol for better performance and connection reliability. Use the `-quic` flag to enable QUIC transport.
 
 ### Example
 
@@ -49,6 +52,8 @@ will do the job. The topology is:
 
 If the host-b is in some insecure network environment, i.e. another data center or another region, the clear-text based redis porocol is not good enough, you can use `qtunnel` as a secure wrapper
 
+#### TCP Mode (Default)
+
 On `host-b`:
 
 	$ qtunnel -listen=127.1:6379 -backend=host-a:6378 -clientmode=true -secret=secret -crypto=rc4
@@ -56,6 +61,16 @@ On `host-b`:
 On `host-a`:
 
 	$ qtunnel -listen=:6378 -backend=127.1:6379 -secret=secret -crypto=rc4
+
+#### QUIC Mode (Recommended for better performance)
+
+On `host-b`:
+
+	$ qtunnel -listen=127.1:6379 -backend=host-a:6378 -clientmode=true -secret=secret -crypto=rc4 -quic=true
+
+On `host-a`:
+
+	$ qtunnel -listen=:6378 -backend=127.1:6379 -secret=secret -crypto=rc4 -quic=true
 
 Then connect on `host-b` as:
 
@@ -66,6 +81,13 @@ This will establish a secure tunnel between your `redis-cli` and `redis` server,
 	redis-cli (host-b) <--> qtunnel (client,host-b) <--> qtunnel (host-a) <--> redis-server
 
 After this, you can communicate over a encrypted wrapper rather than clear text.
+
+#### QUIC Benefits
+
+- **Better Performance**: QUIC provides improved congestion control and reduced connection establishment time
+- **Connection Migration**: QUIC connections can survive network changes (e.g., switching from WiFi to cellular)
+- **Multiplexing**: Multiple streams over a single connection without head-of-line blocking
+- **Built-in Security**: QUIC includes TLS 1.3 by default
 
 ### Credits
 
